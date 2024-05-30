@@ -1,10 +1,8 @@
 import calendar
-import locale
 from datetime import datetime
 
 
 def get_formatted_date(year_month: str):
-    locale.setlocale(locale.LC_TIME, "pt_BR.UTF-8")
     date = datetime.strptime(year_month + "-01", "%Y-%m-%d")
     return date.strftime("%B %Y")
 
