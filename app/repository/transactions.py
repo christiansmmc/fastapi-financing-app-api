@@ -8,11 +8,13 @@ from app.schemas import TransactionCreate, TransactionMonthsWithTransactions
 
 
 def create_transaction(
-        session: Session,
-        transaction: TransactionCreate,
-        user_id: int,
+    session: Session,
+    transaction: TransactionCreate,
+    user_id: int,
 ):
-    db_transaction = Transaction.model_validate(transaction, update={"user_id": user_id})
+    db_transaction = Transaction.model_validate(
+        transaction, update={"user_id": user_id}
+    )
 
     session.add(db_transaction)
     session.commit()
@@ -42,22 +44,22 @@ def get_transaction_by_id(session: Session, transaction_id: int):
 def find_months_with_transactions(session: Session, user_id: int):
     search_transactions = (
         select(
-            func.year(Transaction.transaction_date).label("year"),
-            func.month(Transaction.transaction_date).label("month"),
+            func.extract("year", Transaction.transaction_date).label("year"),
+            func.extract("month", Transaction.transaction_date).label("month"),
         )
         .where(Transaction.transaction_date is not None)
         .where(Transaction.user_id == user_id)
         .group_by(
-            func.year(Transaction.transaction_date),
-            func.month(Transaction.transaction_date),
+            func.extract("year", Transaction.transaction_date),
+            func.extract("month", Transaction.transaction_date),
         )
         .order_by(
-            func.year(Transaction.transaction_date).asc(),
-            func.month(Transaction.transaction_date).asc(),
+            func.extract("year", Transaction.transaction_date).asc(),
+            func.extract("month", Transaction.transaction_date).asc(),
         )
     )
 
-    search_transactions_result = session.exec(search_transactions)
+    search_transactions_result = session.execute(search_transactions)
     transaction_months = [
         TransactionMonthsWithTransactions(year=row.year, month=row.month)
         for row in search_transactions_result
