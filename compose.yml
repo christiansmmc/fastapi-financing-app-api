@@ -1,0 +1,12 @@
+version: "3.1"
+
+services:
+  db:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: fastapi_financing_app
+      MYSQL_DATABASE: fastapi_financing_app
+      MYSQL_USER: fastapi_financing_app
+      MYSQL_PASSWORD: fastapi_financing_app
+    ports:
+      - "3306:3306"

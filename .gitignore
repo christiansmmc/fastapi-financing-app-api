@@ -1,0 +1,42 @@
+# Python
+*.py[cod]
+__pycache__/
+*.so
+
+# Environments
+.env
+.venv/
+venv/
+ENV/
+env/
+ENV.bak/
+env.bak/
+
+# FastAPI
+*.log
+*.pid
+
+# Alembic
+alembic/versions/*.pyc
+alembic/versions/*.pyo
+
+# SQLModel
+*.db
+
+# Pytest
+.cache/
+.tox/
+.coverage
+coverage.xml
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
