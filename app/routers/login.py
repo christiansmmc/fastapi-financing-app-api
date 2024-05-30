@@ -8,7 +8,7 @@ from app.utils.security_utils import verify_password, create_access_token
 router = APIRouter()
 
 
-@router.post("/", tags=["login"], response_model=Token)
+@router.post("", tags=["login"], response_model=Token)
 def login(session: SessionDep, login_data: Login):
     user = get_user_by_email(session, login_data.email)
 

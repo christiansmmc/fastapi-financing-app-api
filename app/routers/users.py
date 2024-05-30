@@ -7,7 +7,7 @@ from app.schemas import UserCreate, UserPublic
 router = APIRouter()
 
 
-@router.post("/", tags=["users"], response_model=UserPublic)
+@router.post("", tags=["users"], response_model=UserPublic)
 def create_user_endpoint(session: SessionDep, user: UserCreate):
     existent_user = get_user_by_email(session, user.email)
     if existent_user:

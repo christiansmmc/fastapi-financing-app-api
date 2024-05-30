@@ -24,7 +24,7 @@ from app.utils.date_utils import get_first_late_date_from_year_month, get_format
 router = APIRouter()
 
 
-@router.post("/", tags=["transactions"], response_model=TransactionPublic)
+@router.post("", tags=["transactions"], response_model=TransactionPublic)
 def create_transaction_endpoint(
     session: SessionDep, current_user: CurrentUser, transaction: TransactionCreate
 ):
@@ -35,7 +35,7 @@ def create_transaction_endpoint(
     return create_transaction(session, transaction, current_user.id)
 
 
-@router.get("/", tags=["transactions"], response_model=List[TransactionPublic])
+@router.get("", tags=["transactions"], response_model=List[TransactionPublic])
 def get_transactions_endpoint(
     session: SessionDep, current_user: CurrentUser, year_month: str
 ):
