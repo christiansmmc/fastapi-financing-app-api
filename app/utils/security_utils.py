@@ -1,25 +1,32 @@
-from datetime import datetime, timedelta, timezone
-from passlib.context import CryptContext
-import jwt
 import os
+from datetime import datetime, timedelta, timezone
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+import jwt
+from passlib.context import CryptContext
 
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+class AuthUtils:
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    jwt_secret_key = os.getenv("JWT_SECRET_KEY")
+    jwt_algorithm = os.getenv("JWT_ALGORITHM")
+    jwt_access_token_expire_minutes = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES"))
 
+    @staticmethod
+    def verify_password(plain_password, hashed_password):
+        return AuthUtils.pwd_context.verify(plain_password, hashed_password)
 
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire_minutes = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES"))
-    expire = datetime.now(timezone.utc) + timedelta(minutes=expire_minutes)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(
-        to_encode, os.getenv("JWT_SECRET_KEY"), algorithm=os.getenv("JWT_ALGORITHM")
-    )
-    return encoded_jwt
+    @staticmethod
+    def get_password_hash(password):
+        return AuthUtils.pwd_context.hash(password)
+
+    @staticmethod
+    def create_access_token(data: dict):
+        to_encode = data.copy()
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=AuthUtils.jwt_access_token_expire_minutes
+        )
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(
+            to_encode, AuthUtils.jwt_secret_key, algorithm=AuthUtils.jwt_algorithm
+        )
+        return encoded_jwt

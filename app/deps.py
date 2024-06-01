@@ -1,8 +1,8 @@
+import os
 from collections.abc import Generator
 from typing import Annotated
 
 import jwt
-import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
@@ -10,9 +10,9 @@ from pydantic import ValidationError
 from sqlmodel import Session
 
 from app.config.db import engine
-from app.schemas import TokenPayload
 from app.models import Users
-from app.repository.users import get_user_by_email
+from app.repository.user_repository import UserRepository
+from app.schemas import TokenPayload
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="/login")
 
@@ -38,7 +38,9 @@ def get_current_user(session: SessionDep, token: TokenDep) -> Users:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
-    user = get_user_by_email(session, token_data.sub)
+
+    user_repository = UserRepository(session)
+    user = user_repository.get_user_by_email(token_data.sub)
 
     if not user:
         raise HTTPException(status_code=404, detail="Usuario não encontrado")
