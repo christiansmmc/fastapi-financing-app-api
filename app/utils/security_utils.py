@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import jwt
 from passlib.context import CryptContext
@@ -21,10 +21,15 @@ class AuthUtils:
 
     @staticmethod
     def create_access_token(data: dict):
+        print(f"JWT Access Token Expire Minutes: {AuthUtils.jwt_access_token_expire_minutes}")
+
         to_encode = data.copy()
-        expire = datetime.now() + timedelta(
+        expire = datetime.now(timezone.utc) + timedelta(
             minutes=AuthUtils.jwt_access_token_expire_minutes
         )
+
+        print(f"Token expiration time: {expire}")
+
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(
             to_encode, AuthUtils.jwt_secret_key, algorithm=AuthUtils.jwt_algorithm
