@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from starlette import status
 
 from app.deps import SessionDep, CurrentUser
@@ -15,12 +15,30 @@ from app.service.transaction_service import TransactionService
 router = APIRouter()
 
 
-@router.post("", tags=["transactions"], response_model=TransactionPublic)
+@router.post(
+    "", tags=["transactions"], response_model=TransactionPublic, status_code=201
+)
 def create_transaction_endpoint(
     session: SessionDep, current_user: CurrentUser, transaction: TransactionCreate
 ):
     transaction_service = TransactionService(session)
     return transaction_service.create_transaction(transaction, current_user)
+
+
+@router.post("/import-csv", tags=["transactions"], status_code=201)
+def create_transactions_from_csv(
+    session: SessionDep,
+    current_user: CurrentUser,
+    csv_file: UploadFile = File(...),
+):
+    if csv_file.content_type != "text/csv":
+        raise HTTPException(
+            status_code=404,
+            detail="File format not supported. Please upload a CSV file.",
+        )
+
+    transaction_service = TransactionService(session)
+    transaction_service.create_transactions_from_csv(csv_file, current_user)
 
 
 @router.get("", tags=["transactions"], response_model=List[TransactionPublic])

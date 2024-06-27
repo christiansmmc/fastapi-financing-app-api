@@ -1,13 +1,17 @@
-id;name
-1;Moradia
-2;Alimentação
-3;Transporte
-4;Saúde
-5;Educação
-6;Lazer e Entretenimento
-7;Compras
-8;Viagem
-9;Despesas Pessoais
-10;Investimentos
-11;Animais de Estimação
-12;Outros
+1,Casa
+2,Mercado
+3,Transporte
+4,Academia e Saúde
+5,Educação
+6,Lazer e Entretenimento
+7,Compras Impulsivas
+8,Viagem
+9,Investimentos
+10,Animais de Estimação
+11,Salário
+12,Outros
+13,Suplementaçao
+14,Assinaturas
+15,Comida Delivery
+16,Compras gerais
+17,Restaurante

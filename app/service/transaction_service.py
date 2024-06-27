@@ -1,4 +1,7 @@
-from fastapi import HTTPException
+from datetime import datetime
+
+import pandas as pd
+from fastapi import HTTPException, UploadFile
 from sqlmodel import Session
 
 from app.models import Users
@@ -13,6 +16,41 @@ from app.schemas import (
 from app.utils.date_utils import DateUtils
 
 
+def get_tag_name_by_nubank_category_name(nubank_category_name):
+    tag_name = ""
+
+    match nubank_category_name:
+        case "supermercado":
+            tag_name = "Mercado"
+        case "restaurante":
+            tag_name = "Restaurante"
+        case "casa":
+            tag_name = "Casa"
+        case "saúde":
+            tag_name = "Academia e Saúde"
+        case "transporte":
+            tag_name = "Transporte"
+        case "lazer":
+            tag_name = "Lazer e Entretenimento"
+        case _:
+            tag_name = "Outros"
+
+    return tag_name
+
+
+def get_bank_name_and_date_from_csv_file(csv_filename: str):
+    csv_base_name = csv_filename.rsplit(".", 1)[0]
+    parts = csv_base_name.split("-")
+
+    bank_name = parts[0]
+    date = parts[1] + "-" + parts[2]
+    date_format = "%Y-%m"
+
+    transaction_date = datetime.strptime(date, date_format)
+
+    return bank_name, transaction_date
+
+
 class TransactionService:
     def __init__(self, session: Session):
         self.session = session
@@ -25,6 +63,42 @@ class TransactionService:
 
         return self.transaction_repository.create_transaction(
             transaction, current_user.id
+        )
+
+    def create_transactions_from_csv(
+        self,
+        csv_file: UploadFile,
+        current_user: Users,
+    ):
+        transaction_to_create = []
+
+        bank_name, transaction_date = get_bank_name_and_date_from_csv_file(
+            csv_file.filename
+        )
+
+        df = pd.read_csv(csv_file.file)
+
+        for index, row in df.iterrows():
+            if row["category"] == "payment":
+                continue
+
+            transaction = {
+                "name": row["title"],
+                "description": f"Importado pelo {bank_name.capitalize()}",
+                "value": row["amount"],
+                "transaction_date": transaction_date,
+                "type": TransactionType.OUTCOME,
+            }
+
+            tag_name = get_tag_name_by_nubank_category_name(row["category"])
+            if tag_name:
+                tag = self.tag_repository.get_tag_by_name(tag_name)
+                transaction["tag_id"] = tag.id
+
+            transaction_to_create.append(transaction)
+
+        self.transaction_repository.create_transactions_from_csv(
+            transaction_to_create, current_user.id
         )
 
     def get_transactions(self, year_month: str, current_user: Users):

@@ -22,6 +22,15 @@ class TransactionRepository:
 
         return db_transaction
 
+    def create_transactions_from_csv(self, transactions: list[dict], user_id: int):
+        db_transactions = [
+            Transaction.model_validate(transaction, update={"user_id": user_id})
+            for transaction in transactions
+        ]
+
+        self.session.add_all(db_transactions)
+        self.session.commit()
+
     def get_transactions_by_date_between(
         self, user_id: int, initial_date: date, end_date: date
     ):

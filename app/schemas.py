@@ -54,6 +54,10 @@ class TransactionCreate(SQLModel):
             self.type = TransactionType.OUTCOME
 
 
+class TransactionCreateCsv(SQLModel):
+    transaction_date: date
+
+
 class TransactionPublic(SQLModel):
     id: int
     name: str

@@ -17,6 +17,15 @@ class TagRepository:
 
         return tag
 
+    def get_tag_by_name(self, tag_name: str):
+        search_tag = select(Tag).where(Tag.name == tag_name)
+        tag = self.session.exec(search_tag).first()
+
+        if tag is None:
+            raise HTTPException(status_code=404, detail="Tag not found")
+
+        return tag
+
     def get_all_tags(self):
         search_tag = select(Tag)
         return self.session.exec(search_tag).all()
