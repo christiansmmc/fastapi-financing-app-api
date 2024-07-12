@@ -12,6 +12,7 @@ from app.schemas import (
     TransactionFormattedMonthsWithTransactions,
     TransactionType,
     TransactionSummary,
+    TransactionUpdate,
 )
 from app.utils.date_utils import DateUtils
 
@@ -64,6 +65,21 @@ class TransactionService:
         return self.transaction_repository.create_transaction(
             transaction, current_user.id
         )
+
+    def update_transaction(self, transaction: TransactionUpdate, current_user: Users):
+        transaction_to_update = self.get_transaction_by_id(transaction.id, current_user)
+
+        if transaction.tag_id:
+            self.tag_repository.get_tag_by_id(transaction.tag_id)
+
+        transaction_to_update.name = transaction.name
+        transaction_to_update.description = transaction.description
+        transaction_to_update.value = transaction.value
+        transaction_to_update.transaction_date = transaction.transaction_date
+        transaction_to_update.type = transaction.type
+        transaction_to_update.tag_id = transaction.tag_id
+
+        return self.transaction_repository.update_transaction(transaction_to_update)
 
     def create_transactions_from_csv(
         self,
@@ -163,9 +179,13 @@ class TransactionService:
         current_user: Users,
         transaction_id: int,
     ):
-        transaction = self.transaction_repository.get_transaction_by_id(transaction_id)
+        transaction = self.get_transaction_by_id(transaction_id, current_user)
+        self.transaction_repository.delete_transaction(transaction.id)
+
+    def get_transaction_by_id(self, id: int, current_user):
+        transaction = self.transaction_repository.get_transaction_by_id(id)
 
         if transaction.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Transaction not found!")
 
-        self.transaction_repository.delete_transaction(transaction_id)
+        return transaction

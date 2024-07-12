@@ -4,7 +4,11 @@ from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.models import Transaction
-from app.schemas import TransactionCreate, TransactionMonthsWithTransactions
+from app.schemas import (
+    TransactionCreate,
+    TransactionMonthsWithTransactions,
+    TransactionUpdate,
+)
 
 
 class TransactionRepository:
@@ -21,6 +25,13 @@ class TransactionRepository:
         self.session.refresh(db_transaction)
 
         return db_transaction
+
+    def update_transaction(self, transaction_to_update: Transaction):
+        self.session.add(transaction_to_update)
+        self.session.commit()
+        self.session.refresh(transaction_to_update)
+
+        return transaction_to_update
 
     def create_transactions_from_csv(self, transactions: list[dict], user_id: int):
         db_transactions = [

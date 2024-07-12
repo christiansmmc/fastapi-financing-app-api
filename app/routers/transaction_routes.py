@@ -9,6 +9,7 @@ from app.schemas import (
     TransactionCreate,
     TransactionFormattedMonthsWithTransactions,
     TransactionSummary,
+    TransactionUpdate,
 )
 from app.service.transaction_service import TransactionService
 
@@ -23,6 +24,16 @@ def create_transaction_endpoint(
 ):
     transaction_service = TransactionService(session)
     return transaction_service.create_transaction(transaction, current_user)
+
+
+@router.patch(
+    "", tags=["transactions"], response_model=TransactionPublic, status_code=200
+)
+def update_transaction_endpoint(
+    session: SessionDep, current_user: CurrentUser, transaction: TransactionUpdate
+):
+    transaction_service = TransactionService(session)
+    return transaction_service.update_transaction(transaction, current_user)
 
 
 @router.post("/import-csv", tags=["transactions"], status_code=201)

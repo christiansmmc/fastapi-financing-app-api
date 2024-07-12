@@ -54,6 +54,16 @@ class TransactionCreate(SQLModel):
             self.type = TransactionType.OUTCOME
 
 
+class TransactionUpdate(SQLModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+    value: float
+    transaction_date: date
+    type: TransactionType
+    tag_id: Optional[int] = None
+
+
 class TransactionCreateCsv(SQLModel):
     transaction_date: date
 
