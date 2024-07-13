@@ -1,4 +1,7 @@
+import base64
+import csv
 from datetime import datetime
+from io import StringIO
 
 import pandas as pd
 from fastapi import HTTPException, UploadFile
@@ -10,46 +13,26 @@ from app.repository.transaction_repository import TransactionRepository
 from app.schemas import (
     TransactionCreate,
     TransactionFormattedMonthsWithTransactions,
+    TransactionImportCsv,
     TransactionType,
     TransactionSummary,
     TransactionUpdate,
 )
 from app.utils.date_utils import DateUtils
 
+EXPORT_CSV_HEADER = ["Nome", "Valor", "Descricao", "Data", "Tipo", "Categoria"]
+
 
 def get_tag_name_by_nubank_category_name(nubank_category_name):
-    tag_name = ""
-
-    match nubank_category_name:
-        case "supermercado":
-            tag_name = "Mercado"
-        case "restaurante":
-            tag_name = "Restaurante"
-        case "casa":
-            tag_name = "Casa"
-        case "saúde":
-            tag_name = "Academia e Saúde"
-        case "transporte":
-            tag_name = "Transporte"
-        case "lazer":
-            tag_name = "Lazer e Entretenimento"
-        case _:
-            tag_name = "Outros"
-
-    return tag_name
-
-
-def get_bank_name_and_date_from_csv_file(csv_filename: str):
-    csv_base_name = csv_filename.rsplit(".", 1)[0]
-    parts = csv_base_name.split("-")
-
-    bank_name = parts[0]
-    date = parts[1] + "-" + parts[2]
-    date_format = "%Y-%m"
-
-    transaction_date = datetime.strptime(date, date_format)
-
-    return bank_name, transaction_date
+    category_map = {
+        "supermercado": "Mercado",
+        "restaurante": "Restaurante",
+        "casa": "Casa",
+        "saúde": "Academia e Saúde",
+        "transporte": "Transporte",
+        "lazer": "Lazer e Entretenimento",
+    }
+    return category_map.get(nubank_category_name, "Outros")
 
 
 class TransactionService:
@@ -83,16 +66,19 @@ class TransactionService:
 
     def create_transactions_from_csv(
         self,
-        csv_file: UploadFile,
+        transaction_import_csv: TransactionImportCsv,
         current_user: Users,
     ):
         transaction_to_create = []
 
-        bank_name, transaction_date = get_bank_name_and_date_from_csv_file(
-            csv_file.filename
+        transaction_date = datetime.strptime(
+            transaction_import_csv.transactions_date, "%Y-%m"
         )
 
-        df = pd.read_csv(csv_file.file)
+        decoded_csv = base64.b64decode(transaction_import_csv.csv_base64).decode(
+            "utf-8"
+        )
+        df = pd.read_csv(StringIO(decoded_csv))
 
         for index, row in df.iterrows():
             if row["category"] == "payment":
@@ -100,7 +86,7 @@ class TransactionService:
 
             transaction = {
                 "name": row["title"],
-                "description": f"Importado pelo {bank_name.capitalize()}",
+                "description": f"Importado pelo {transaction_import_csv.bank_name.capitalize()}",
                 "value": row["amount"],
                 "transaction_date": transaction_date,
                 "type": TransactionType.OUTCOME,
@@ -116,6 +102,35 @@ class TransactionService:
         self.transaction_repository.create_transactions_from_csv(
             transaction_to_create, current_user.id
         )
+
+    def export_transactions_csv(self, year_month: str, current_user: Users):
+        first_day_of_month, last_day_of_month = (
+            DateUtils.get_first_last_date_from_year_month(year_month)
+        )
+
+        transactions = self.transaction_repository.get_transactions_by_date_between(
+            current_user.id, first_day_of_month, last_day_of_month
+        )
+
+        with StringIO() as csv_buffer:
+            csv_writer = csv.writer(csv_buffer)
+            csv_writer.writerow(EXPORT_CSV_HEADER)
+            for transaction in transactions:
+                row = [
+                    transaction.name,
+                    transaction.value,
+                    transaction.description,
+                    transaction.transaction_date,
+                    transaction.type,
+                    transaction.tag.name,
+                ]
+                csv_writer.writerow(row)
+            csv_content = csv_buffer.getvalue()
+
+        csv_content = csv_buffer.getvalue()
+        csv_base64 = base64.b64encode(csv_content.encode()).decode()
+
+        return {"base_64": csv_base64}
 
     def get_transactions(self, year_month: str, current_user: Users):
         first_day_of_month, last_day_of_month = (
@@ -151,13 +166,12 @@ class TransactionService:
             current_user.id, first_day_of_month, last_day_of_month
         )
 
-        outcome_transactions = filter(
-            lambda transaction: transaction.type == TransactionType.OUTCOME,
-            transactions,
-        )
-        income_transactions = filter(
-            lambda transaction: transaction.type == TransactionType.INCOME, transactions
-        )
+        outcome_transactions = [
+            t for t in transactions if t.type == TransactionType.OUTCOME
+        ]
+        income_transactions = [
+            t for t in transactions if t.type == TransactionType.INCOME
+        ]
 
         total_outcome = sum(transactions.value for transactions in outcome_transactions)
         total_income = sum(transactions.value for transactions in income_transactions)

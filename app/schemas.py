@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 from typing import Optional
 
@@ -64,8 +64,14 @@ class TransactionUpdate(SQLModel):
     tag_id: Optional[int] = None
 
 
-class TransactionCreateCsv(SQLModel):
-    transaction_date: date
+class TransactionImportCsv(SQLModel):
+    bank_name: str
+    transactions_date: str
+    csv_base64: str
+
+
+class TransactionExportCsv(SQLModel):
+    base_64: str
 
 
 class TransactionPublic(SQLModel):

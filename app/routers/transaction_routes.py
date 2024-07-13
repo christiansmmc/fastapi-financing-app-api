@@ -5,6 +5,8 @@ from starlette import status
 
 from app.deps import SessionDep, CurrentUser
 from app.schemas import (
+    TransactionExportCsv,
+    TransactionImportCsv,
     TransactionPublic,
     TransactionCreate,
     TransactionFormattedMonthsWithTransactions,
@@ -40,16 +42,12 @@ def update_transaction_endpoint(
 def create_transactions_from_csv(
     session: SessionDep,
     current_user: CurrentUser,
-    csv_file: UploadFile = File(...),
+    transaction_import_csv: TransactionImportCsv,
 ):
-    if csv_file.content_type != "text/csv":
-        raise HTTPException(
-            status_code=404,
-            detail="File format not supported. Please upload a CSV file.",
-        )
-
     transaction_service = TransactionService(session)
-    transaction_service.create_transactions_from_csv(csv_file, current_user)
+    transaction_service.create_transactions_from_csv(
+        transaction_import_csv, current_user
+    )
 
 
 @router.get("", tags=["transactions"], response_model=List[TransactionPublic])
@@ -83,6 +81,14 @@ def get_transaction_summary_endpoint(
 ):
     transaction_service = TransactionService(session)
     return transaction_service.get_transaction_summary(year_month, current_user)
+
+
+@router.get("/export-csv", tags=["transactions"], response_model=TransactionExportCsv)
+def export_transactions_csv(
+    session: SessionDep, current_user: CurrentUser, year_month: str
+):
+    transaction_service = TransactionService(session)
+    return transaction_service.export_transactions_csv(year_month, current_user)
 
 
 @router.delete(
