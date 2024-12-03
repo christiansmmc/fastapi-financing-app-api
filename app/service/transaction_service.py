@@ -4,7 +4,7 @@ from datetime import datetime
 from io import StringIO
 
 import pandas as pd
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException
 from sqlmodel import Session
 
 from app.models import Users
@@ -81,7 +81,8 @@ class TransactionService:
         df = pd.read_csv(StringIO(decoded_csv))
 
         for index, row in df.iterrows():
-            if row["category"] == "payment":
+            category = row.get("category", None)
+            if row["amount"] < 0:
                 continue
 
             transaction = {
@@ -92,10 +93,12 @@ class TransactionService:
                 "type": TransactionType.OUTCOME,
             }
 
-            tag_name = get_tag_name_by_nubank_category_name(row["category"])
-            if tag_name:
-                tag = self.tag_repository.get_tag_by_name(tag_name)
-                transaction["tag_id"] = tag.id
+            if category:
+                tag_name = get_tag_name_by_nubank_category_name(category)
+
+                if tag_name:
+                    tag = self.tag_repository.get_tag_by_name(tag_name)
+                    transaction["tag_id"] = tag.id
 
             transaction_to_create.append(transaction)
 
